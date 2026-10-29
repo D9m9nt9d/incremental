@@ -3,9 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Lootboxes incremental</title>
+  <link rel="stylesheet" href="styles/index.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "animejs": "./node_modules/animejs/dist/modules/index.js"
+      }
+    }
+  </script>
 </head>
 <body>
-  <h1>Hi</h1>
+  <div class="above" id="above">
+    <div class="top-half">
+      <div class="left-side">
+        <div id="boxes-counter">0</div>
+        <button id="make-box">Make box</button>
+        <div class="boxes-container" id="boxes-container"></div>
+        <div class="box-place" id="box-place"></div>
+        <button id="pack-box" display="none">Pack box</button>
+      </div>
+
+      <div class="right-side">
+        <div id="loot-counter">0</div>
+        <button id="make-loot">Make loot</button>
+        <div class="loot-container" id="loot-container"></div>
+      </div>
+    </div>
+    
+    <div class="bottom-half">
+      <div>drop off area</div>
+      <div class="dropoff-area" id="dropoff-area"></div>
+    </div>
+  </div>
+
+  <div class="below">
+    Under consturction
+  </div>
+  
+  <script src="./scripts/index.js" type="module"></script>
 </body>
 </html>
