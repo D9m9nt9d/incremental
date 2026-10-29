@@ -1,5 +1,31 @@
+import { animate, splitText, stagger } from 'animejs';
+
 const notify = (message) => {
-  console.log(message)
+
+  const notification = document.createElement('p')
+  notification.classList.add('notification')
+  notification.textContent = message
+
+  const { words } = splitText(notification, {
+    words: { wrap: 'clip' },
+  })
+
+  document.body.append(notification)
+
+  animate(words, {
+    y: [
+      { to: ['100%', '0%'] },
+      { to: '-100%', delay: 750, ease: 'in(3)' }
+    ],
+    duration: 750,
+    ease: 'out(3)',
+    delay: stagger(100),
+    loop: false,
+  });
+
+  setTimeout(() => {
+    notification.remove()
+  }, 3000);
 }
 
 const isInside = (box, place) => {

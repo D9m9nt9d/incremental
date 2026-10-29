@@ -12,9 +12,20 @@ console.log('main.js loading')
 //   return Id
 // }
 
+// Cash
+
+const cashLabel = document.getElementById('cash-label')
+
+let Cash = 0
+
+const addCash = (amount) => {
+  Cash += amount
+  cashLabel.textContent = `Cash: ${amount}`
+}
+
 // Boxes
 
-let Boxes_limit = 10
+let Boxes_limit = 3
 let Boxes_count = 0
 
 const above = document.getElementById('above')
@@ -87,11 +98,28 @@ packBox.addEventListener('click', () => {
     Box_placed = null
     packBox.disabled = true
 
+    let lastName = null
+    let inARow = 1
+    let totalCash = 0
 
     Loot_in_box.forEach(function(loot) {
       removeLoot(loot.element)
+      totalCash += loot.Cost
+
+      if (lastName != null) {
+        if (lastName == loot.Name) {
+          inARow += 1
+        } else {
+          inARow = 1
+        }
+      }
+      lastName = loot.Name
     })
     Loot_in_box = []
+
+    totalCash = totalCash + (totalCash * inARow/10)
+
+    addCash(totalCash)
   }
 })
 

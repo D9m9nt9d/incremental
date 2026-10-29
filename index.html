@@ -15,16 +15,16 @@
 </head>
 <body>
   <div class="topbar">
-    <span class="cash-label">Cash: 0</span>
+    <span class="cash-label" id="cash-label">Cash: 0</span>
   </div>
 
   <div class="above" id="above">
     <div class="top-half">
       <div class="left-side">
         <div class="row">
-          <div class="boxes-counter" id="boxes-counter">0</div>
+          <div class="counter" id="boxes-counter">0</div>
           <button class="make-box" id="make-box">Make box</button>
-          <div class="boxes-counter"></div>
+          <div class="counter"></div>
         </div>
 
         <div class="boxes-container" id="boxes-container"></div>
@@ -38,9 +38,9 @@
 
       <div class="right-side">
         <div class="row">
-           <div id="loot-counter">0</div>
+           <div class="counter" id="loot-counter">0</div>
            <button id="make-loot">Make loot</button>
-           <div></div>
+           <div class="counter"></div>
         </div>
         <div class="row">
           <div class="loot-container" id="loot-container"></div>
