@@ -1,12 +1,20 @@
 import { notify, isInside } from './misc.js'
-import { createDraggable } from 'animejs';
+import { createDraggable, random } from 'animejs';
 
 console.log('main.js loading')
 
+// let Id = 1
+// const getId = () => {
+//   if (Id > 1024) {
+//     Id = 0
+//   }
+//   Id += 1
+//   return Id
+// }
 
 // Boxes
 
-let Boxes_limit = 3
+let Boxes_limit = 10
 let Boxes_count = 0
 
 const above = document.getElementById('above')
@@ -26,7 +34,7 @@ const removeBox = (box) => {
   boxCounter.textContent = Boxes_count
 }
 
-const addBox = (s) => {
+const addBox = () => {
   Boxes_count = Boxes_count + 1
   boxCounter.textContent = Boxes_count
 
@@ -79,9 +87,11 @@ packBox.addEventListener('click', () => {
     Box_placed = null
     packBox.disabled = true
 
-    document.querySelectorAll('.loot-packed').forEach(function(loot) {
-      removeLoot(loot)
-    });
+
+    Loot_in_box.forEach(function(loot) {
+      removeLoot(loot.element)
+    })
+    Loot_in_box = []
   }
 })
 
@@ -95,8 +105,19 @@ makeBox.addEventListener('click', () => {
 
 // Loot
 
+const Loots = [
+  {Name: 'Labubu', Chance: 100, Cost: 5},
+  {Name: 'Spinner', Chance: 90, Cost: 7},
+  {Name: 'Inverted-labubu', Chance: 50, Cost: 50}
+]
+
 let Loot_limit = 7
 let Loot_count = 0
+
+let Max_loot_per_box = 3
+let Loot_in_box = []
+
+let Luck = 1
 
 const lootCounter = document.getElementById('loot-counter')
 const makeLoot = document.getElementById('make-loot')
@@ -112,19 +133,30 @@ const addLoot = () => {
   Loot_count = Loot_count + 1
   lootCounter.textContent = Loot_count
 
+  const randomLoot = {...Loots[random(0,2,0)]}
+
   const loot = document.createElement('img')
   loot.draggable = false
-  loot.src = 'assets/loot/labubu.png'
+  loot.src = `assets/loot/${randomLoot.Name}.png`
   loot.classList.add('loot-unpacked')
   lootContainer.appendChild(loot)
 
-  createDraggable(loot, {
+  randomLoot['element'] = loot
+
+  const draggable = createDraggable(loot, {
     container: above,
     containerFriction: 1,
     velocityMultiplier: 0,
 
     onRelease: (self) => {
       if (Box_placed != null && isInside(loot, boxPlace)) {
+        if (Loot_in_box.length >= Max_loot_per_box) {
+          notify('No more space in that box')
+          return
+        }
+
+        Loot_in_box.push(randomLoot)
+
         loot.classList.remove('loot-unpacked')
         loot.classList.add('loot-packed')
 
@@ -139,6 +171,18 @@ const addLoot = () => {
       }
     }
   })
+
+  const containerRect = lootContainer.getBoundingClientRect()
+  const lootRect = loot.getBoundingClientRect()
+
+  const maxX = containerRect.width - lootRect.width
+  const maxY = containerRect.height - lootRect.height
+
+  const randomX = Math.random() * Math.max(0, maxX)
+  const randomY = Math.random() * Math.max(0, maxY)
+
+  draggable.setX(randomX)
+  draggable.setY(randomY)
 }
 
 makeLoot.addEventListener('click', () => {

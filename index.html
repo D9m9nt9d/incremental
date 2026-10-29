@@ -14,20 +14,37 @@
   </script>
 </head>
 <body>
+  <div class="topbar">
+    <span class="cash-label">Cash: 0</span>
+  </div>
+
   <div class="above" id="above">
     <div class="top-half">
       <div class="left-side">
-        <div id="boxes-counter">0</div>
-        <button id="make-box">Make box</button>
+        <div class="row">
+          <div class="boxes-counter" id="boxes-counter">0</div>
+          <button class="make-box" id="make-box">Make box</button>
+          <div class="boxes-counter"></div>
+        </div>
+
         <div class="boxes-container" id="boxes-container"></div>
-        <div class="box-place" id="box-place"></div>
-        <button id="pack-box" display="none">Pack box</button>
+        <div class="row">
+          <div class="box-place" id="box-place"></div>  
+        </div>
+        <div class="row">
+         <button id="pack-box" disabled="true">Pack box</button>
+        </div>
       </div>
 
       <div class="right-side">
-        <div id="loot-counter">0</div>
-        <button id="make-loot">Make loot</button>
-        <div class="loot-container" id="loot-container"></div>
+        <div class="row">
+           <div id="loot-counter">0</div>
+           <button id="make-loot">Make loot</button>
+           <div></div>
+        </div>
+        <div class="row">
+          <div class="loot-container" id="loot-container"></div>
+        </div>
       </div>
     </div>
     

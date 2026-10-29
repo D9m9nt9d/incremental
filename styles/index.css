@@ -1,6 +1,20 @@
 body {
+  margin: 0;
   display: grid;
   justify-content: center;
+
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* Internet Explorer/Edge */
+  user-select: none;         /* Standard syntax */
+}
+
+.topbar {
+  width: 600px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .above {
@@ -26,15 +40,30 @@ body {
   height: 300px;
 }
 
-.right-side {
-  float: right;
-  width: 300px;
-  height: 300px;
-}
-
 .left-side {
   float: left;
-  width: 300px;
+  width: 415px;
+  height: 300px;
+  
+  align-items: center;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.boxes-counter {
+  width: 10%;
+  text-align: center;
+}
+.make-box {
+  width: 40%;
+}
+
+.right-side {
+  float: right;
+  width: 185px;
   height: 300px;
 }
 
@@ -44,7 +73,7 @@ body {
 }
 
 .boxes-container {
-  height: 75px;
+  height: 165px;
 
   display: flex;
   flex-wrap: wrap;
@@ -73,7 +102,7 @@ body {
 .loot-container {
   position: relative;
   aspect-ratio: 1 / 1;
-  width: 50%;
+  width: 80%;
   background-color: #9e6b30;
   border: 1px solid #8f7041;
 }
