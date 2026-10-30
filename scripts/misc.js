@@ -21,7 +21,7 @@ const notify = (message) => {
     ease: 'out(3)',
     delay: stagger(100),
     loop: false,
-  });
+  }); 
 
   setTimeout(() => {
     notification.remove()
