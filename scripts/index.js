@@ -431,7 +431,7 @@ const boxesLimit1 = createUpgrade('Boxes limit +1', [
 connect(lootLuck1, boxesLimit1)
 
 const boxSpace1 = createUpgrade('Box space +1', [
-  {Cost: 20, Func: () => Max_loot_per_box += 1 , Argument: 1},
+  {Cost: 20, Func: () => Max_loot_per_box += 1, Argument: 1},
   {Cost: 40, Func: addBoxSpace, Argument: 1},
 ], -150, 250)
 
