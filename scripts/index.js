@@ -153,9 +153,9 @@ makeBox.addEventListener('click', () => {
 // Loot
 
 const Loots = [
-  {Name: 'Labubu', Chance: 100, Cost: 5},
-  {Name: 'Spinner', Chance: 90, Cost: 7},
-  {Name: 'Inverted-labubu', Chance: 50, Cost: 50}
+  {Name: 'labubu', Chance: 100, Cost: 5},
+  {Name: 'spinner', Chance: 90, Cost: 7},
+  {Name: 'inverted-labubu', Chance: 50, Cost: 50}
 ]
 
 // luck = 2 = all things have the same chance
@@ -164,8 +164,6 @@ const getRandomLoot = (howLucky = 1)  =>{
 
   const weights = Loots.map(l => l.Chance * (maxChance / l.Chance) ** (howLucky - 1));
   const total = weights.reduce((a, b) => a + b, 0);
-
-  console.log(weights)
 
   let roll = Math.random() * total;
   for (let i = 0; i < Loots.length; i++) {
