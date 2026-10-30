@@ -110,6 +110,7 @@ button {
   position: absolute;
   aspect-ratio: 1 / 1;
   height: 40px;
+  margin: 25px; /* 90(parent) - 40(this) /  2  */
 }
 
 .loot-container {
@@ -137,7 +138,13 @@ button {
 .upgrade-default {
   position: absolute;
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+
+  display: flex;
+  align-items: center;      /* vertical */
+  justify-content: center;  /* horizontal, optional */
+  height: 128px;            /* needs a height to center in */
 }
+
 .upgrade-default button {
   position: absolute;
   top:50%;
@@ -153,21 +160,26 @@ button {
   pointer-events: none;
   position: absolute;
   margin: 0;
-  top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  height: 100%;
-  width: 100%;
+  width:80%;
   color: aliceblue;
   font-size: large;
   text-align: center;
 }
 .upgrade-default .amount {
-  top: 69%;
+  top: 25%;
 }
 .upgrade-default .label {
-  top: 90%;
+  top: 50%;
 }
 .upgrade-default .price {
-  top: 112%;
+  top: 75%;
+}
+
+.lines {
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
 }

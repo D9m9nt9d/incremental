@@ -1,5 +1,6 @@
 import { notify, isInside } from './misc.js'
 import { createDraggable, random, round } from 'animejs';
+import { animate, splitText, stagger } from 'animejs';
 
 console.log('main.js loading')
 
@@ -17,6 +18,7 @@ console.log('main.js loading')
 const cashLabel = document.getElementById('cash-label')
 
 let Cash = 0
+let CashMulti = 1
 
 const addCash = (amount) => {
   Cash += amount
@@ -91,8 +93,10 @@ const addBox = () => {
         })
         Packed_boxes[box] = null
 
+        totalCash *= CashMulti
+
         if (inARow>=3) {
-          const plusCash = round(totalCash * inARow/10, 2)
+          const plusCash = round(totalCash * inARow/10 * CashMulti, 2)
           totalCash = totalCash + plusCash
           notify(`${inARow} ${lastName}s in a row! +${plusCash}`)
         }
@@ -217,17 +221,13 @@ const addLoot = () => {
 
         Loot_in_box.push(randomLoot)
 
+        self.revert()
+        
         loot.classList.remove('loot-unpacked')
         loot.classList.add('loot-packed')
 
-        const lootRect = loot.getBoundingClientRect()
-        const placeRect = boxPlace.getBoundingClientRect()
-        const offsetX = placeRect.left + placeRect.width / 2 - (lootRect.left + lootRect.width / 2)
-        const offsetY = placeRect.top + placeRect.height / 2 - (lootRect.top + lootRect.height / 2)
-
-        self.setX(self.x + offsetX)
-        self.setY(self.y + offsetY)
-        self.disable()
+        loot.style.transform += ` rotate(${random(1,360)}deg)`
+        boxPlace.append(loot)
       }
     }
   })
@@ -255,8 +255,10 @@ makeLoot.addEventListener('click', () => {
 
 // Upgrades
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 const SVG = `
-<svg width="128" height="128" viewBox="0 0 24 24" fill="#2d3a8f" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="1 1 22 22" fill="#2d3a8f" xmlns=${SVG_NS}>
   <path d="M11.2346 2.31703C11.7247 2.11404 12.2753 2.11404 12.7654 2.31703L18.3057 4.61191C18.7958 4.81489 19.1851 5.20424 19.3881 5.6943L21.683 11.2346C21.886 11.7247 21.886 12.2753 21.683 12.7654L19.3881 18.3057C19.1851 18.7958 18.7958 19.1851 18.3057 19.3881L12.7654 21.683C12.2753 21.886 11.7247 21.886 11.2346 21.683L5.6943 19.3881C5.20424 19.1851 4.81489 18.7958 4.61191 18.3057L2.31703 12.7654C2.11404 12.2753 2.11404 11.7247 2.31703 11.2346L4.61191 5.6943C4.81489 5.20424 5.20424 4.81489 5.6943 4.61191L11.2346 2.31703Z" stroke="#242c65" stroke-width="2"/>
 </svg>`;
 
@@ -295,58 +297,161 @@ const createUpgrade = (name, levels, x, y) => {
       return
     }
 
-    levelInfo.Func()
+    levelInfo.Func(levelInfo.Argument)
     addCash(-Cost)
     
     currentLevel += 1
 
-    const newPrice = levels[currentLevel] && levels[currentLevel].Cost
-
     amount.textContent = `${currentLevel}/${levels.length}`
-    price.textContent = newPrice && `$${newPrice}` || 'Maxed'
+
+    const newPrice = levels[currentLevel] && levels[currentLevel].Cost
+    if (newPrice) {
+      price.textContent = `$${newPrice}`
+    } else {
+      price.textContent = 'Maxed'
+
+      const { chars } = splitText(price, { words: false, chars: true });
+
+      animate(chars, {
+        // Property keyframes
+        y: [
+          { to: '-1.1rem', ease: 'outExpo', duration: 600 },
+          { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
+        ],
+        // Property specific parameters
+        rotate: {
+          from: '-1turn',
+          delay: 0
+        },
+        color: {
+          to: 'rgb(110, 158, 220)', ease: 'inExpo', duration: 550,
+        },
+        delay: stagger(50),
+        ease: 'inOutCirc',
+        loop: false
+      });
+    }
   })
 
   return card;
 }
 
+const lines = document.getElementById('lines')
+
+const TENSION = 0.3; // higher = wigglier
+const WIDTH = 8;
+
+const connect = (a, b) => {
+  const box = below.getBoundingClientRect();
+  const ra = a.querySelector('svg').getBoundingClientRect();
+  const rb = b.querySelector('svg').getBoundingClientRect();
+
+  const ac = { x: ra.left + ra.width / 2, y: ra.top + ra.height / 2 };
+  const bc = { x: rb.left + rb.width / 2, y: rb.top + rb.height / 2 };
+  const horizontal = Math.abs(bc.x - ac.x) > Math.abs(bc.y - ac.y);
+
+  let x1, y1, x2, y2, c1, c2;
+
+  if (horizontal) {
+    const aFirst = ac.x < bc.x;
+    x1 = (aFirst ? ra.right : ra.left) - box.left;
+    y1 = ac.y - box.top;
+    x2 = (aFirst ? rb.left : rb.right) - box.left;
+    y2 = bc.y - box.top;
+    const dx = Math.abs(x2 - x1) * TENSION * (aFirst ? 1 : -1);
+    c1 = `${x1 + dx} ${y1}`;
+    c2 = `${x2 - dx} ${y2}`;
+  } else {
+    const aFirst = ac.y < bc.y;
+    x1 = ac.x - box.left;
+    y1 = (aFirst ? ra.bottom : ra.top) - box.top;
+    x2 = bc.x - box.left;
+    y2 = (aFirst ? rb.top : rb.bottom) - box.top;
+    const dy = Math.abs(y2 - y1) * TENSION * (aFirst ? 1 : -1);
+    c1 = `${x1} ${y1 + dy}`;
+    c2 = `${x2} ${y2 - dy}`;
+  }
+
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", `M ${x1} ${y1} C ${c1}, ${c2}, ${x2} ${y2}`);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "#2d3a8f");
+  path.setAttribute("stroke-width", WIDTH);
+  path.setAttribute("stroke-linecap", "round");
+  lines.appendChild(path);
+  return path;
+}
+
 // Upgrade functions
 
-const addOneTenthLuck = () => {
-  Luck += .1
+const addLuck = (argument) => {
+  Luck += argument
 }
 
-const addOneBoxLimit = () => {
-  Boxes_limit += 1
+const addBoxLimit = (argument) => {
+  Boxes_limit += argument
 }
 
-const addOneSpaceInBox = () => {
-  Max_loot_per_box += 1
+const addBoxSpace = (argument) => {
+  Max_loot_per_box += argument
+}
+
+const addLootLimit = (argument) => {
+  Loot_limit += argument
+}
+
+const addCashMulti = (argument) => {
+  CashMulti += argument
 }
 
 // 100 = 128px (one upgrade size)
 
-createUpgrade('Loot luck', [
-  {Cost: 40, Func: addOneTenthLuck},
-  {Cost: 60, Func: addOneTenthLuck},
-  {Cost: 80, Func: addOneTenthLuck},
-  {Cost: 100, Func: addOneTenthLuck},
+const cashMulti1 = createUpgrade('Cash multi +0.1x', [
+  {Cost: 25, Func: addCashMulti, Argument: 0.1},
+  {Cost: 45, Func: addCashMulti, Argument: 0.1},
+  {Cost: 70, Func: addCashMulti, Argument: 0.1},
+  {Cost: 95, Func: addCashMulti, Argument: 0.1},
 ], 0, 0)
 
-createUpgrade('Loot luck', [
-  {Cost: 40, Func: addOneTenthLuck},
-  {Cost: 60, Func: addOneTenthLuck},
-  {Cost: 80, Func: addOneTenthLuck},
-  {Cost: 100, Func: addOneTenthLuck},
-], 0, 120)
+const lootLuck1 = createUpgrade('Loot luck', [
+  {Cost: 30, Func: addLuck, Argument: 0.1},
+  {Cost: 45, Func: addLuck, Argument: 0.1},
+  {Cost: 60, Func: addLuck, Argument: 0.1},
+  {Cost: 75, Func: addLuck, Argument: 0.1},
+  {Cost: 90, Func: addLuck, Argument: 0.1},
+], 0, 110)
 
-createUpgrade('Boxes limit +1', [
-  {Cost: 20, Func: addOneBoxLimit},
-  {Cost: 40, Func: addOneBoxLimit},
-], -120, 120)
+connect(cashMulti1, lootLuck1)
 
-createUpgrade('Box space +1', [
-  {Cost: 20, Func: addOneSpaceInBox},
-  {Cost: 40, Func: addOneSpaceInBox},
-], -180, 220)
+const boxesLimit1 = createUpgrade('Boxes limit +1', [
+  {Cost: 20, Func: addBoxLimit, Argument: 1},
+  {Cost: 40, Func: addBoxLimit, Argument: 1},
+], -130, 125)
+
+connect(lootLuck1, boxesLimit1)
+
+const boxSpace1 = createUpgrade('Box space +1', [
+  {Cost: 20, Func: () => Max_loot_per_box += 1 , Argument: 1},
+  {Cost: 40, Func: addBoxSpace, Argument: 1},
+], -150, 250)
+
+connect(boxesLimit1, boxSpace1)
+
+const cashMulti2 = createUpgrade('Cash multi +0.1x', [
+  {Cost: 50, Func: addCashMulti, Argument: 0.1},
+  {Cost: 80, Func: addCashMulti, Argument: 0.1},
+  {Cost: 100, Func: addCashMulti, Argument: 0.1},
+  {Cost: 110, Func: addCashMulti, Argument: 0.1},
+], 10, 240)
+
+connect(lootLuck1, cashMulti2)
+
+const lootLimit1 = createUpgrade('Loot limit +1', [
+  {Cost: 35, Func: addLootLimit, Argument: 1},
+  {Cost: 50, Func: addLootLimit, Argument: 1},
+  {Cost: 75, Func: addLootLimit, Argument: 1},
+], 125, 125)
+
+connect(lootLuck1, lootLimit1)
 
 console.log('main.js loaded')
