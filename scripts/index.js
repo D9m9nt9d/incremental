@@ -26,6 +26,61 @@ const addCash = (amount) => {
   cashLabel.textContent = `Cash: ${Cash}`
 }
 
+// Box shop
+
+let Equipped_box = 'box'
+let Boxes_owned = ['box']
+const Box_types = {
+  'box': { Name: 'Default box', Cost: 0, Multi: 1 },
+  'marked-box': { Name: 'Marked box', Cost: 300, Multi: 2 },
+  'white-box': { Name: 'White box', Cost: 1600, Multi: 10 },
+}
+
+const boxShop = document.getElementById('box-shop')
+const boxShopButton = document.getElementById('box-shop-button')
+const topRowPicker = document.getElementById('top-row-picker')
+
+for (const type in Box_types) {
+  const boxInfo = Box_types[type]
+  const card = document.createElement("div");
+  card.innerHTML = `
+    <p>${boxInfo.Name}</p>
+    <img draggable=false src='assets/${type}-opened.png'></img>
+    <button>${type == 'box' && 'Equipped' || '$' + boxInfo.Cost}</button>
+  `;
+  card.id = type+'SHOP'
+  boxShop.append(card)
+
+  const button = card.querySelector('button')
+  button.addEventListener('click', () => {
+    if (Equipped_box == type) {
+      return
+    }
+
+    if (Boxes_owned.includes(type)) {
+      document.getElementById(Equipped_box+'SHOP').querySelector('button').textContent = 'Equip'
+      button.textContent = 'Equipped'
+      Equipped_box = type
+      return
+    }
+
+    const Cost = boxInfo.Cost
+
+    if (Cash < Cost) {
+      notify('Not enough cash')
+      return
+    }
+
+    addCash(-Cost)
+    Boxes_owned.push(type)
+    button.textContent = 'Equip'
+  })
+}
+
+boxShopButton.addEventListener('click', () => {
+  boxShop.style.display='flex'
+})
+
 // Boxes
 
 let Packed_boxes = {}
@@ -56,7 +111,8 @@ const addBox = () => {
 
   const box = document.createElement('img')
   box.draggable = false
-  box.src = 'assets/box-opened.png'
+  box.id = Equipped_box
+  box.src = `assets/${box.id}-opened.png`
   box.classList.add('box-unpacked')
   boxesContainer.appendChild(box)
 
@@ -94,6 +150,7 @@ const addBox = () => {
         Packed_boxes[box] = null
 
         totalCash *= Cash_multi
+        totalCash *= Box_types[box.id].Multi
 
         if (inARow >= 3) {
           const plusCash = round(totalCash * inARow / 10 * Cash_multi, 2)
@@ -128,7 +185,7 @@ packBox.addEventListener('click', () => {
     const box = Box_placed.$target
     box.classList.remove('box-unpacked')
     box.classList.add('box-packed')
-    box.src = 'assets/box-closed.png'
+    box.src = `assets/${box.id}-closed.png`
     Box_placed.enable()
     Box_placed = null
     packBox.disabled = true
@@ -298,7 +355,7 @@ const createCard = (id) => {
 
   const levels = upg.Levels
   const name = upg.Label
-  
+
   const card = document.createElement("div");
   card.className = "upgrade-default";
   card.id = name
@@ -342,18 +399,18 @@ const createCard = (id) => {
     currentLevel += 1
     Upgrades_bought[id] = currentLevel
 
-    if (currentLevel==1) {
-      upg.Lines.forEach( function (path) {
-        animate(path, {stroke: {to: primaryBought, duration: 550}})
-      })  
+    if (currentLevel == 1) {
+      upg.Lines.forEach(function (path) {
+        animate(path, { stroke: { to: primaryBought, duration: 550 } })
+      })
 
       const upgsUnlocks = upg.Unlocks
       upgsUnlocks.forEach(function (unlockedId) {
         const [metReqs] = hasReqs(unlockedId)
         if (metReqs) {
           const svg = Upgrades[unlockedId].Card.querySelector('svg')
-          animate(svg, {fill: {to: primaryBought, duration: 330}})
-          animate(svg.querySelector('path'), {stroke: {to: secondaryBought, duration: 390}})  
+          animate(svg, { fill: { to: primaryBought, duration: 330 } })
+          animate(svg.querySelector('path'), { stroke: { to: secondaryBought, duration: 390 } })
         }
       })
     }
@@ -479,7 +536,7 @@ const Upgrades = {
         { Cost: 40, Func: () => Max_loot_per_box += 1 },
       ],
     X: -150, Y: 250,
-    Requirements: ['L2', 'R2']
+    Requirements: ['L2']
   },
 
   'R2': {
@@ -504,6 +561,18 @@ const Upgrades = {
     X: 10, Y: 240,
     Requirements: ['M2']
   },
+
+  'M4': {
+    Label: 'Unlock box shop',
+    Levels: [{
+      Cost: 500, Func: () => {
+        topRowPicker.style.display='block'
+        boxShopButton.style.display='block'
+      }
+    }],
+    X: 70, Y: 380,
+    Requirements: ['L3', 'M3', 'R2']
+  },
 }
 
 // add unlocks
@@ -527,9 +596,9 @@ for (const id in Upgrades) {
   upg['Lines'] = []
 
   if (!upg.Requirements.length) {
-      const svg = upg.Card.querySelector('svg')
-      svg.style.fill = primaryBought
-      svg.querySelector('path').style.stroke = secondaryBought
+    const svg = upg.Card.querySelector('svg')
+    svg.style.fill = primaryBought
+    svg.querySelector('path').style.stroke = secondaryBought
   }
 }
 
@@ -547,4 +616,4 @@ for (const id in Upgrades) {
 
 console.log('main.js loaded')
 
-addCash(500)
+addCash(0)
