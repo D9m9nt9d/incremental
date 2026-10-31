@@ -157,6 +157,8 @@ button {
 }
 
 .box-shop {
+  position: absolute;
+  bottom: 88px;
   padding-left: 16px;
   width: 384px;
   height: 184px;
@@ -186,6 +188,23 @@ button {
 .box-shop div img {
   height: 64%;
   aspect-ratio: 1;
+}
+
+.stats-page {
+  padding-right: 16px;
+  width: 384px;
+  height: 184px;
+  position: absolute;
+  bottom: 88px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+.stats-page p {
+  margin: 0;
+  height: 10%;
+  width: 50%;
+  text-align: right;
 }
 
 .below {

@@ -26,7 +26,10 @@ const addCash = (amount) => {
   cashLabel.textContent = `Cash: ${Cash}`
 }
 
-// Box shop
+// Top row picker stuff
+
+const statsPage = document.getElementById('stats-page')
+const statsPageButton = document.getElementById('stats-page-button')
 
 let Equipped_box = 'box'
 let Boxes_owned = ['box']
@@ -48,7 +51,7 @@ for (const type in Box_types) {
     <img draggable=false src='assets/${type}-opened.png'></img>
     <button>${type == 'box' && 'Equipped' || '$' + boxInfo.Cost}</button>
   `;
-  card.id = type+'SHOP'
+  card.id = type + 'SHOP'
   boxShop.append(card)
 
   const button = card.querySelector('button')
@@ -58,7 +61,7 @@ for (const type in Box_types) {
     }
 
     if (Boxes_owned.includes(type)) {
-      document.getElementById(Equipped_box+'SHOP').querySelector('button').textContent = 'Equip'
+      document.getElementById(Equipped_box + 'SHOP').querySelector('button').textContent = 'Equip'
       button.textContent = 'Equipped'
       Equipped_box = type
       return
@@ -78,8 +81,41 @@ for (const type in Box_types) {
 }
 
 boxShopButton.addEventListener('click', () => {
-  boxShop.style.display='flex'
+  boxShop.style.visibility = 'visible'
+  statsPage.style.visibility = 'hidden'
 })
+addCash(5000)
+// Stats page
+
+statsPageButton.addEventListener('click', () => {
+  statsPage.style.visibility = 'visible'
+  boxShop.style.visibility = 'hidden'
+})
+
+const createStat = () => {
+  const element = document.createElement('p')
+  statsPage.append(element)
+  return element
+}
+
+const lootLuckStat = createStat()
+const lootLimitStat = createStat()
+const boxesLimitStat = createStat()
+const maxLootPerBoxStat = createStat()
+const boxMultiplier = createStat()
+const cashMultiplier = createStat()
+const upgradesBought = createStat()
+
+setInterval(() => {
+  lootLuckStat.textContent = `Loot luck: ${round(Luck, 2)}`
+  lootLimitStat.textContent = `Loot limit: ${round(Loot_limit, 2)}`
+  boxesLimitStat.textContent = `Boxes limit: ${round(Boxes_limit, 2)}`
+  maxLootPerBoxStat.textContent = `Max loot per box: ${round(Max_loot_per_box, 2)}`
+  boxMultiplier.textContent = `Box multiplier: ${Box_types[Equipped_box].Multi}`
+  cashMultiplier.textContent = `Cash multiplier: ${round(Cash_multi, 2)}`
+  upgradesBought.textContent = `Upgrades bought: ${Upgrades_bought.length, 2}`
+}, 1000)
+
 
 // Boxes
 
@@ -566,12 +602,24 @@ const Upgrades = {
     Label: 'Unlock box shop',
     Levels: [{
       Cost: 500, Func: () => {
-        topRowPicker.style.display='block'
-        boxShopButton.style.display='block'
+        topRowPicker.style.visibility = 'visible'
+        boxShopButton.style.visibility = 'visible'
       }
     }],
     X: 70, Y: 380,
     Requirements: ['L3', 'M3', 'R2']
+  },
+
+  'L4': {
+    Label: 'Unlock stats page',
+    Levels: [{
+      Cost: 250, Func: () => {
+        topRowPicker.style.visibility = 'visible'
+        statsPageButton.style.visibility = 'visible'
+      }
+    }],
+    X: -100, Y: 375,
+    Requirements: ['M4']
   },
 }
 
