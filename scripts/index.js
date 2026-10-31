@@ -18,7 +18,7 @@ console.log('main.js loading')
 const cashLabel = document.getElementById('cash-label')
 
 let Cash = 0
-let CashMulti = 1
+let Cash_multi = 1
 
 const addCash = (amount) => {
   Cash += amount
@@ -79,7 +79,7 @@ const addBox = () => {
         let inARow = 1
         let totalCash = 0
 
-        Box_loot.forEach(function(loot) {
+        Box_loot.forEach(function (loot) {
           totalCash += loot.Cost
 
           if (lastName != null) {
@@ -93,10 +93,10 @@ const addBox = () => {
         })
         Packed_boxes[box] = null
 
-        totalCash *= CashMulti
+        totalCash *= Cash_multi
 
-        if (inARow>=3) {
-          const plusCash = round(totalCash * inARow/10 * CashMulti, 2)
+        if (inARow >= 3) {
+          const plusCash = round(totalCash * inARow / 10 * Cash_multi, 2)
           totalCash = totalCash + plusCash
           notify(`${inARow} ${lastName}s in a row! +${plusCash}`)
         }
@@ -109,7 +109,7 @@ const addBox = () => {
       if (Box_placed == null && isInside(box, boxPlace)) {
         Box_placed = self
         packBox.disabled = false
-        
+
         const boxRect = box.getBoundingClientRect()
         const placeRect = boxPlace.getBoundingClientRect()
         const offsetX = placeRect.left + placeRect.width / 2 - (boxRect.left + boxRect.width / 2)
@@ -133,7 +133,7 @@ packBox.addEventListener('click', () => {
     Box_placed = null
     packBox.disabled = true
 
-    Loot_in_box.forEach(function(loot) {
+    Loot_in_box.forEach(function (loot) {
       removeLoot(loot.element)
       loot.element = null
     })
@@ -147,19 +147,19 @@ makeBox.addEventListener('click', () => {
     addBox()
   } else {
     notify('Boxes limit reached')
-  } 
+  }
 })
 
 // Loot
 
 const Loots = [
-  {Name: 'labubu', Chance: 100, Cost: 5},
-  {Name: 'spinner', Chance: 90, Cost: 7},
-  {Name: 'inverted-labubu', Chance: 50, Cost: 50}
+  { Name: 'labubu', Chance: 100, Cost: 5 },
+  { Name: 'spinner', Chance: 90, Cost: 7 },
+  { Name: 'inverted-labubu', Chance: 50, Cost: 50 }
 ]
 
 // luck = 2 = all things have the same chance
-const getRandomLoot = (howLucky = 1)  =>{
+const getRandomLoot = (howLucky = 1) => {
   const maxChance = Math.max(...Loots.map(l => l.Chance));
 
   const weights = Loots.map(l => l.Chance * (maxChance / l.Chance) ** (howLucky - 1));
@@ -220,11 +220,11 @@ const addLoot = () => {
         Loot_in_box.push(randomLoot)
 
         self.revert()
-        
+
         loot.classList.remove('loot-unpacked')
         loot.classList.add('loot-packed')
 
-        loot.style.transform += ` rotate(${random(1,360)}deg)`
+        loot.style.transform += ` rotate(${random(1, 360)}deg)`
         boxPlace.append(loot)
       }
     }
@@ -253,20 +253,55 @@ makeLoot.addEventListener('click', () => {
 
 // Upgrades
 
-const SVG_NS = "http://www.w3.org/2000/svg";
+const Upgrades_bought = {}
 
+const primaryNotBought = '#555555'
+const secondaryNotBought = '#666666'
+
+const primaryBought = "#2d3a8f"
+const secondaryBought = "#242c65"
+
+const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG = `
-<svg width="128" height="128" viewBox="1 1 22 22" fill="#2d3a8f" xmlns=${SVG_NS}>
-  <path d="M11.2346 2.31703C11.7247 2.11404 12.2753 2.11404 12.7654 2.31703L18.3057 4.61191C18.7958 4.81489 19.1851 5.20424 19.3881 5.6943L21.683 11.2346C21.886 11.7247 21.886 12.2753 21.683 12.7654L19.3881 18.3057C19.1851 18.7958 18.7958 19.1851 18.3057 19.3881L12.7654 21.683C12.2753 21.886 11.7247 21.886 11.2346 21.683L5.6943 19.3881C5.20424 19.1851 4.81489 18.7958 4.61191 18.3057L2.31703 12.7654C2.11404 12.2753 2.11404 11.7247 2.31703 11.2346L4.61191 5.6943C4.81489 5.20424 5.20424 4.81489 5.6943 4.61191L11.2346 2.31703Z" stroke="#242c65" stroke-width="2"/>
+<svg width="128" height="128" viewBox="1 1 22 22" fill=${primaryNotBought} xmlns=${SVG_NS}>
+  <path d="M11.2346 2.31703C11.7247 2.11404 12.2753 2.11404 12.7654 2.31703L18.3057 4.61191C18.7958 4.81489 19.1851 5.20424 19.3881 5.6943L21.683 11.2346C21.886 11.7247 21.886 12.2753 21.683 12.7654L19.3881 18.3057C19.1851 18.7958 18.7958 19.1851 18.3057 19.3881L12.7654 21.683C12.2753 21.886 11.7247 21.886 11.2346 21.683L5.6943 19.3881C5.20424 19.1851 4.81489 18.7958 4.61191 18.3057L2.31703 12.7654C2.11404 12.2753 2.11404 11.7247 2.31703 11.2346L4.61191 5.6943C4.81489 5.20424 5.20424 4.81489 5.6943 4.61191L11.2346 2.31703Z" 
+  stroke=${secondaryNotBought}  stroke-width="2"/>
 </svg>`;
 
 const below = document.getElementById('below')
+const lines = document.getElementById('lines')
 
-const createUpgrade = (name, levels, x, y) => {
+const hasReqs = (id) => {
+  const upg = Upgrades[id]
+
+  let reqsMet = true
+  let reason = ''
+
+  upg.Requirements.forEach(function (reqId) {
+    if (!reqsMet) {
+      return
+    }
+
+    if (!Upgrades_bought[reqId]) {
+      reqsMet = false
+      reason = Upgrades[reqId].Label
+    }
+  })
+
+  return [reqsMet, reason]
+}
+
+const createCard = (id) => {
+  const upg = Upgrades[id]
+
   let currentLevel = 0;
 
+  const levels = upg.Levels
+  const name = upg.Label
+  
   const card = document.createElement("div");
   card.className = "upgrade-default";
+  card.id = name
   card.innerHTML = `
     ${SVG}
     <button></button>
@@ -274,7 +309,7 @@ const createUpgrade = (name, levels, x, y) => {
     <p class="label">${name}</p>
     <p class="price">$${levels[currentLevel].Cost}</p>
   `;
-  card.style.transform = `translate(${x}%, ${y}%)`;
+  card.style.transform = `translate(${upg.X}%, ${upg.Y}%)`;
   below.appendChild(card);
 
   const button = card.querySelector('button')
@@ -282,8 +317,14 @@ const createUpgrade = (name, levels, x, y) => {
   const price = card.querySelector('.price')
 
   button.addEventListener('click', () => {
-    if (currentLevel>=levels.length) {
+    if (currentLevel >= levels.length) {
       notify('Max level reached')
+      return
+    }
+
+    const [requirementsMet, whichDoesnt] = hasReqs(id)
+    if (!requirementsMet) {
+      notify(`Need ${whichDoesnt}`)
       return
     }
 
@@ -295,10 +336,27 @@ const createUpgrade = (name, levels, x, y) => {
       return
     }
 
-    levelInfo.Func(levelInfo.Argument)
+    levelInfo.Func()
     addCash(-Cost)
-    
+
     currentLevel += 1
+    Upgrades_bought[id] = currentLevel
+
+    if (currentLevel==1) {
+      upg.Lines.forEach( function (path) {
+        animate(path, {stroke: {to: primaryBought, duration: 550}})
+      })  
+
+      const upgsUnlocks = upg.Unlocks
+      upgsUnlocks.forEach(function (unlockedId) {
+        const [metReqs] = hasReqs(unlockedId)
+        if (metReqs) {
+          const svg = Upgrades[unlockedId].Card.querySelector('svg')
+          animate(svg, {fill: {to: primaryBought, duration: 330}})
+          animate(svg.querySelector('path'), {stroke: {to: secondaryBought, duration: 390}})  
+        }
+      })
+    }
 
     amount.textContent = `${currentLevel}/${levels.length}`
 
@@ -311,19 +369,12 @@ const createUpgrade = (name, levels, x, y) => {
       const { chars } = splitText(price, { words: false, chars: true });
 
       animate(chars, {
-        // Property keyframes
         y: [
           { to: '-1.1rem', ease: 'outExpo', duration: 600 },
           { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
         ],
-        // Property specific parameters
-        rotate: {
-          from: '-1turn',
-          delay: 0
-        },
-        color: {
-          to: 'rgb(110, 158, 220)', ease: 'inExpo', duration: 550,
-        },
+        rotate: { from: '-1turn', delay: 0 },
+        color: { to: 'rgb(110, 158, 220)', ease: 'inExpo', duration: 550 },
         delay: stagger(50),
         ease: 'inOutCirc',
         loop: false
@@ -333,8 +384,6 @@ const createUpgrade = (name, levels, x, y) => {
 
   return card;
 }
-
-const lines = document.getElementById('lines')
 
 const TENSION = 0.3; // higher = wigglier
 const WIDTH = 8;
@@ -373,83 +422,129 @@ const connect = (a, b) => {
   const path = document.createElementNS(SVG_NS, "path");
   path.setAttribute("d", `M ${x1} ${y1} C ${c1}, ${c2}, ${x2} ${y2}`);
   path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "#2d3a8f");
+  path.setAttribute("stroke", secondaryNotBought);
   path.setAttribute("stroke-width", WIDTH);
   path.setAttribute("stroke-linecap", "round");
   lines.appendChild(path);
+
   return path;
-}
-
-// Upgrade functions
-
-const addLuck = (argument) => {
-  Luck += argument
-}
-
-const addBoxLimit = (argument) => {
-  Boxes_limit += argument
-}
-
-const addBoxSpace = (argument) => {
-  Max_loot_per_box += argument
-}
-
-const addLootLimit = (argument) => {
-  Loot_limit += argument
-}
-
-const addCashMulti = (argument) => {
-  CashMulti += argument
 }
 
 // 100 = 128px (one upgrade size)
 
-const cashMulti1 = createUpgrade('Cash multi +0.1x', [
-  {Cost: 25, Func: addCashMulti, Argument: 0.1},
-  {Cost: 45, Func: addCashMulti, Argument: 0.1},
-  {Cost: 70, Func: addCashMulti, Argument: 0.1},
-  {Cost: 95, Func: addCashMulti, Argument: 0.1},
-], 0, 0)
+const Upgrades = {
+  'M1': {
+    Label: 'Cash multi +0.1x',
+    Levels:
+      [
+        { Cost: 25, Func: () => Cash_multi += 0.1 },
+        { Cost: 45, Func: () => Cash_multi += 0.1 },
+        { Cost: 70, Func: () => Cash_multi += 0.1 },
+        { Cost: 95, Func: () => Cash_multi += 0.1 },
+      ],
+    X: 0, Y: 0,
+    Requirements: []
+  },
 
-const lootLuck1 = createUpgrade('Loot luck', [
-  {Cost: 30, Func: addLuck, Argument: 0.1},
-  {Cost: 45, Func: addLuck, Argument: 0.1},
-  {Cost: 60, Func: addLuck, Argument: 0.1},
-  {Cost: 75, Func: addLuck, Argument: 0.1},
-  {Cost: 90, Func: addLuck, Argument: 0.1},
-], 0, 110)
+  'M2': {
+    Label: 'Loot luck',
+    Levels:
+      [
+        { Cost: 30, Func: () => Luck += 0.1 },
+        { Cost: 45, Func: () => Luck += 0.1 },
+        { Cost: 60, Func: () => Luck += 0.1 },
+        { Cost: 75, Func: () => Luck += 0.1 },
+        { Cost: 90, Func: () => Luck += 0.1 },
+      ],
+    X: 0, Y: 110,
+    Requirements: ['M1']
+  },
 
-connect(cashMulti1, lootLuck1)
+  'L2': {
+    Label: 'Boxes limit +1',
+    Levels:
+      [
+        { Cost: 20, Func: () => Boxes_limit += 1 },
+        { Cost: 40, Func: () => Boxes_limit += 1 },
+      ],
+    X: -130, Y: 125,
+    Requirements: ['M2']
+  },
 
-const boxesLimit1 = createUpgrade('Boxes limit +1', [
-  {Cost: 20, Func: addBoxLimit, Argument: 1},
-  {Cost: 40, Func: addBoxLimit, Argument: 1},
-], -130, 125)
+  'L3': {
+    Label: 'Box space +1',
+    Levels:
+      [
+        { Cost: 20, Func: () => Max_loot_per_box += 1 },
+        { Cost: 40, Func: () => Max_loot_per_box += 1 },
+      ],
+    X: -150, Y: 250,
+    Requirements: ['L2', 'R2']
+  },
 
-connect(lootLuck1, boxesLimit1)
+  'R2': {
+    Label: 'Loot limit +1',
+    Levels: [
+      { Cost: 35, Func: () => Loot_limit += 1 },
+      { Cost: 50, Func: () => Loot_limit += 1 },
+      { Cost: 75, Func: () => Loot_limit += 1 },
+    ],
+    X: 125, Y: 125,
+    Requirements: ['M2']
+  },
 
-const boxSpace1 = createUpgrade('Box space +1', [
-  {Cost: 20, Func: () => Max_loot_per_box += 1, Argument: 1},
-  {Cost: 40, Func: addBoxSpace, Argument: 1},
-], -150, 250)
+  'M3': {
+    Label: 'Cash multi +0.15x',
+    Levels: [
+      { Cost: 50, Func: () => Cash_multi += 0.15 },
+      { Cost: 80, Func: () => Cash_multi += 0.15 },
+      { Cost: 100, Func: () => Cash_multi += 0.15 },
+      { Cost: 110, Func: () => Cash_multi += 0.15 },
+    ],
+    X: 10, Y: 240,
+    Requirements: ['M2']
+  },
+}
 
-connect(boxesLimit1, boxSpace1)
+// add unlocks
 
-const cashMulti2 = createUpgrade('Cash multi +0.1x', [
-  {Cost: 50, Func: addCashMulti, Argument: 0.1},
-  {Cost: 80, Func: addCashMulti, Argument: 0.1},
-  {Cost: 100, Func: addCashMulti, Argument: 0.1},
-  {Cost: 110, Func: addCashMulti, Argument: 0.1},
-], 10, 240)
+for (const id in Upgrades) {
+  Upgrades[id].Unlocks = []
+}
 
-connect(lootLuck1, cashMulti2)
+for (const id in Upgrades) {
+  const upg = Upgrades[id]
+  upg.Requirements.forEach(function (reqId) {
+    Upgrades[reqId].Unlocks.push(id)
+  })
+}
 
-const lootLimit1 = createUpgrade('Loot limit +1', [
-  {Cost: 35, Func: addLootLimit, Argument: 1},
-  {Cost: 50, Func: addLootLimit, Argument: 1},
-  {Cost: 75, Func: addLootLimit, Argument: 1},
-], 125, 125)
+// create cards
 
-connect(lootLuck1, lootLimit1)
+for (const id in Upgrades) {
+  const upg = Upgrades[id]
+  upg['Card'] = createCard(id)
+  upg['Lines'] = []
+
+  if (!upg.Requirements.length) {
+      const svg = upg.Card.querySelector('svg')
+      svg.style.fill = primaryBought
+      svg.querySelector('path').style.stroke = secondaryBought
+  }
+}
+
+// create lines
+
+for (const id in Upgrades) {
+  const upg = Upgrades[id]
+  const card = upg.Card
+  upg.Unlocks.forEach(function (otherId) {
+    const otherCard = Upgrades[otherId].Card
+    const path = connect(card, otherCard)
+    upg.Lines.push(path)
+  })
+}
 
 console.log('main.js loaded')
+
+addCash(500)
