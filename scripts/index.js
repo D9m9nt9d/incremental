@@ -569,8 +569,6 @@ const createCard = (id, isPrestige) => {
         const [metReqs] = hasReqs(unlockedId, upgs, upgsBought)
         if (metReqs) {
           const svg = upgs[unlockedId].Card.querySelector('svg')
-          console.log(svg)
-          console.log(maxedPrimaryColor)
           animate(svg, { fill: { to: maxedPrimaryColor, duration: 330 } })
           animate(svg.querySelector('path'), { stroke: { to: maxedSecondaryColor, duration: 390 } })
         }
@@ -935,20 +933,20 @@ const Upgrades = {
   },
 
   'L9': {
-    Label: 'Cash multi +10x',
+    Label: 'Cash multi +50x',
     Levels: [
-      { Cost: 200_000_000, Func: () => Cash_multi += 10 },
-      { Cost: 1_000_000_000, Func: () => Cash_multi += 10 },
+      { Cost: 200_000_000, Func: () => Cash_multi += 50 },
+      { Cost: 1_000_000_000, Func: () => Cash_multi += 50 },
     ],
     X: -150, Y: 1150,
     Requirements: ['L8']
   },
 
   'R8A': {
-    Label: 'Cash multi +50x',
+    Label: 'Cash multi +10x',
     Levels: [
-      { Cost: 10_000_000, Func: () => Cash_multi += 50 },
-      { Cost: 50_000_000, Func: () => Cash_multi += 50 },
+      { Cost: 10_000_000, Func: () => Cash_multi += 10 },
+      { Cost: 50_000_000, Func: () => Cash_multi += 10 },
     ],
     X: 160, Y: 1010,
     Requirements: ['M8']
@@ -1112,6 +1110,11 @@ const loadUpgrades = (upgs, isPrestige) => {
   const prefix = isPrestige && '₱' || '$'
 
   for (const id in upgs) {
+    if (isPrestige) {
+      prestigesLabel.style.display = 'block'
+      belower.style.display = 'flex'
+    }
+
     const amountOfLvls = upgs[id]
     const upg = upgrades[id]
     const levels = upg.Levels
