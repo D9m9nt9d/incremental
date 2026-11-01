@@ -1,6 +1,5 @@
 import { notify, isInside, formatCash } from './misc.js'
-import { createDraggable, random, round } from 'animejs';
-import { animate, splitText, stagger } from 'animejs';
+import { createDraggable, random, round, animate, splitText, stagger } from 'animejs';
 
 console.log('main.js loading')
 
