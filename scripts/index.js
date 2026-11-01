@@ -431,6 +431,12 @@ makeLoot.addEventListener('click', () => {
 
 // Upgrades
 
+const Prestige_upgrades_bought = {}
+
+const prestigeMaxed = '#edd2a1'
+const prestigePrimary = '#b16f24'
+const prestigeSecondary = '#cf9149'
+
 const Upgrades_bought = {}
 
 const primaryNotBought = '#555555'
@@ -472,7 +478,7 @@ const createCard = (id, isPrestige) => {
   let lsName = 'upgrades'
   let parent = below
   let upgs = Upgrades
-  let upgsBought = upgradesBought
+  let upgsBought = Upgrades_bought
   let maxedColor = 'rgb(110, 158, 220)'
   let maxedPrimaryColor = primaryBought
   let maxedSecondaryColor = secondaryBought
@@ -548,10 +554,10 @@ const createCard = (id, isPrestige) => {
     }
 
     currentLevel += 1
+    upgsBought[id] = currentLevel
     if (notSave != true) {
-      upgsBought[id] = currentLevel
+      localStorage.setItem(lsName, JSON.stringify(upgsBought))
     }
-    localStorage.setItem(lsName, JSON.stringify(upgsBought))
 
     if (currentLevel == 1) {
       upg.Lines.forEach(function (path) {
@@ -560,9 +566,11 @@ const createCard = (id, isPrestige) => {
 
       const upgsUnlocks = upg.Unlocks
       upgsUnlocks.forEach(function (unlockedId) {
-        const [metReqs] = hasReqs(unlockedId)
+        const [metReqs] = hasReqs(unlockedId, upgs, upgsBought)
         if (metReqs) {
           const svg = upgs[unlockedId].Card.querySelector('svg')
+          console.log(svg)
+          console.log(maxedPrimaryColor)
           animate(svg, { fill: { to: maxedPrimaryColor, duration: 330 } })
           animate(svg.querySelector('path'), { stroke: { to: maxedSecondaryColor, duration: 390 } })
         }
@@ -973,6 +981,7 @@ const Prestige_upgrades = {
       { Cost: 1, Func: () => Actual_cash_multi *= 2 },
     ],
     X: -75, Y: 0,
+    Requirements: []
   },
 
   'L2': {
@@ -985,6 +994,7 @@ const Prestige_upgrades = {
       { Cost: 32, Func: () => Actual_cash_multi *= 2 },
     ],
     X: -120, Y: 100,
+    Requirements: ['L1']
   },
 
   'R1': {
@@ -993,6 +1003,7 @@ const Prestige_upgrades = {
       { Cost: 1, Func: () => Prestiges_multi *= 2 },
     ],
     X: 75, Y: 0,
+    Requirements: []
   },
 
   'R2': {
@@ -1005,6 +1016,7 @@ const Prestige_upgrades = {
       { Cost: 32, Func: () => Prestiges_multi *= 2 },
     ],
     X: 120, Y: 100,
+    Requirements: ['R1']
   },
 
   'M2': {
@@ -1013,6 +1025,7 @@ const Prestige_upgrades = {
       { Cost: 1024, Func: () => Actual_cash_multi *= 1024 },
     ],
     X: 0, Y: 100,
+    Requirements: ['L2', 'R2']
   }
 }
 
@@ -1057,25 +1070,18 @@ for (const id in Upgrades) {
 
 // Same with prestige upgrades
 
-const Prestige_upgrades_bought = {}
-
-const prestigeMaxed = 'rgb(237, 210, 161)'
-const prestigePrimary = 'rgb(177 111 36)'
-const prestigeSecondary = 'rgb(207 145 73)'
-
 // add unlocks
 
 for (const id in Prestige_upgrades) {
   Prestige_upgrades[id].Unlocks = []
-  Prestige_upgrades[id].Requirements = []
 }
 
-// for (const id in Prestige_upgrades) {
-//   const upg = Prestige_upgrades[id]
-//   upg.Requirements.forEach(function (reqId) {
-//     Prestige_upgrades[reqId].Unlocks.push(id)
-//   })
-// }
+for (const id in Prestige_upgrades) {
+  const upg = Prestige_upgrades[id]
+  upg.Requirements.forEach(function (reqId) {
+    Prestige_upgrades[reqId].Unlocks.push(id)
+  })
+}
 
 // create cards
 
@@ -1125,7 +1131,7 @@ const loadUpgrades = (upgs, isPrestige) => {
         upgsUnlocks.forEach(function (unlockedId) {
           const [metReqs] = hasReqs(unlockedId, upgrades, upgsBought)
           if (metReqs) {
-            const svg = Upgrades[unlockedId].Card.querySelector('svg')
+            const svg = upgrades[unlockedId].Card.querySelector('svg')
             svg.style.fill = primary
             svg.querySelector('path').style.stroke = secondary
           }
