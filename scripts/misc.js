@@ -38,4 +38,17 @@ const isInside = (box, place) => {
   return boxArea > 0 && overlapWidth * overlapHeight >= boxArea / 4
 }
 
-export { notify, isInside }
+const formatCash = (cash) => {
+  if (cash < 1_000) {
+    return cash.toString()
+  }
+  if (cash < 1_000_000) {
+    return (cash / 1_000).toFixed(1) + 'k'
+  }
+  if (cash < 1_000_000_000) {
+    return (cash / 1_000_000).toFixed(1) + 'M'
+  }
+  return (cash / 1_000_000_000).toFixed(1) + 'B'
+}
+
+export { notify, isInside, formatCash }

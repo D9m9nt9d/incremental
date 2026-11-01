@@ -1,17 +1,8 @@
-import { notify, isInside } from './misc.js'
+import { notify, isInside, formatCash } from './misc.js'
 import { createDraggable, random, round } from 'animejs';
 import { animate, splitText, stagger } from 'animejs';
 
 console.log('main.js loading')
-
-// let Id = 1
-// const getId = () => {
-//   if (Id > 1024) {
-//     Id = 0
-//   }
-//   Id += 1
-//   return Id
-// }
 
 // Cash
 
@@ -23,25 +14,25 @@ let Cash_multi = 1
 const addCash = (amount) => {
   Cash += amount
   Cash = round(Cash, 2)
-  cashLabel.textContent = `Cash: ${Cash}`
+  cashLabel.textContent = `Cash: ${formatCash(Cash)}`
+  localStorage.setItem('cash', Cash)
 }
 
 // Top row picker stuff
 
-const statsPage = document.getElementById('stats-page')
-const statsPageButton = document.getElementById('stats-page-button')
+const topRowPicker = document.getElementById('top-row-picker')
 
 let Equipped_box = 'box'
 let Boxes_owned = ['box']
 const Box_types = {
   'box': { Name: 'Default box', Cost: 0, Multi: 1 },
   'marked-box': { Name: 'Marked box', Cost: 300, Multi: 2 },
-  'white-box': { Name: 'White box', Cost: 1600, Multi: 10 },
+  'white-box': { Name: 'White box', Cost: 1600, Multi: 5 },
+  'crate': { Name: 'Crate', Cost: 10000, Multi: 20 },
 }
 
 const boxShop = document.getElementById('box-shop')
 const boxShopButton = document.getElementById('box-shop-button')
-const topRowPicker = document.getElementById('top-row-picker')
 
 for (const type in Box_types) {
   const boxInfo = Box_types[type]
@@ -64,6 +55,7 @@ for (const type in Box_types) {
       document.getElementById(Equipped_box + 'SHOP').querySelector('button').textContent = 'Equip'
       button.textContent = 'Equipped'
       Equipped_box = type
+      localStorage.setItem('equippedBox', Equipped_box)
       return
     }
 
@@ -77,20 +69,13 @@ for (const type in Box_types) {
     addCash(-Cost)
     Boxes_owned.push(type)
     button.textContent = 'Equip'
+
+    localStorage.setItem('boxes', JSON.stringify(Boxes_owned))
   })
 }
 
-boxShopButton.addEventListener('click', () => {
-  boxShop.style.visibility = 'visible'
-  statsPage.style.visibility = 'hidden'
-})
-addCash(5000)
-// Stats page
-
-statsPageButton.addEventListener('click', () => {
-  statsPage.style.visibility = 'visible'
-  boxShop.style.visibility = 'hidden'
-})
+const statsPage = document.getElementById('stats-page')
+const statsPageButton = document.getElementById('stats-page-button')
 
 const createStat = () => {
   const element = document.createElement('p')
@@ -104,20 +89,61 @@ const boxesLimitStat = createStat()
 const maxLootPerBoxStat = createStat()
 const boxMultiplier = createStat()
 const cashMultiplier = createStat()
+const totalCashMulti = createStat()
 const upgradesBought = createStat()
+const glowingLootChance = createStat()
+const glowingLootMultiplier = createStat()
+const invertedLootChance = createStat()
+const invertedLootMultiplier = createStat()
 
 setInterval(() => {
   lootLuckStat.textContent = `Loot luck: ${round(Luck, 2)}`
   lootLimitStat.textContent = `Loot limit: ${round(Loot_limit, 2)}`
   boxesLimitStat.textContent = `Boxes limit: ${round(Boxes_limit, 2)}`
   maxLootPerBoxStat.textContent = `Max loot per box: ${round(Max_loot_per_box, 2)}`
-  boxMultiplier.textContent = `Box multiplier: ${Box_types[Equipped_box].Multi}`
-  cashMultiplier.textContent = `Cash multiplier: ${round(Cash_multi, 2)}`
-  upgradesBought.textContent = `Upgrades bought: ${Upgrades_bought.length, 2}`
-}, 1000)
+  const boxMulti = Box_types[Equipped_box].Multi
+  boxMultiplier.textContent = `Box multiplier: ${boxMulti}`
+  const cashMulti = round(Cash_multi, 2)
+  cashMultiplier.textContent = `Cash multiplier: ${cashMulti}`
+  totalCashMulti.textContent = `Total cash multiplier: ${boxMulti * cashMulti}`
+  upgradesBought.textContent = `Upgrades bought: ${Object.keys(Upgrades_bought).length}`
+  glowingLootChance.textContent = `Glowing loot chance: ${round(Glowing_loot_chance, 2)}%`
+  glowingLootMultiplier.textContent = `Glowing loot multiplier: ${round(Glowing_loot_multiplier, 2)}`
+  invertedLootChance.textContent = `Inverted loot chance: ${round(Inverted_loot_chance, 2)}%`
+  invertedLootMultiplier.textContent = `Inverted loot multiplier: ${round(Inverted_loot_multiplier, 2)}`
+}, 2000)
 
+const discardLoot = document.getElementById('discard-loot')
+const discardLootButton = document.getElementById('discard-loot-button')
+
+boxShopButton.addEventListener('click', () => {
+  boxShop.style.visibility = 'visible'
+  statsPage.style.visibility = 'hidden'
+  discardLoot.style.visibility = 'hidden'
+})
+
+statsPageButton.addEventListener('click', () => {
+  statsPage.style.visibility = 'visible'
+  boxShop.style.visibility = 'hidden'
+  discardLoot.style.visibility = 'hidden'
+})
+
+discardLootButton.addEventListener('click', () => {
+  discardLoot.style.visibility = 'visible'
+  statsPage.style.visibility = 'hidden'
+  boxShop.style.visibility = 'hidden'
+})
 
 // Boxes
+
+let Id = 1
+const getId = () => {
+  if (Id > 1024) {
+    Id = 0
+  }
+  Id += 1
+  return Id
+}
 
 let Packed_boxes = {}
 
@@ -147,8 +173,9 @@ const addBox = () => {
 
   const box = document.createElement('img')
   box.draggable = false
-  box.id = Equipped_box
-  box.src = `assets/${box.id}-opened.png`
+  box.type = Equipped_box
+  box.id = 'BOX' + getId()
+  box.src = `assets/${box.type}-opened.png`
   box.classList.add('box-unpacked')
   boxesContainer.appendChild(box)
 
@@ -158,14 +185,23 @@ const addBox = () => {
     velocityMultiplier: 0,
 
     onRelease: (self) => {
+      if (discardLoot.style.visibility === 'visible' && isInside(box, discardLoot)) {
+        if (box.classList.contains('box-packed')) {
+          delete Packed_boxes[box.id]
+        }
+        self.revert()
+        removeBox(box)
+        return
+      }
+
       if (box.classList.contains('box-packed')) {
         if (!isInside(box, dropoffArea)) {
           return
         }
 
+        const Box_loot = Packed_boxes[box.id]
+        self.revert()
         removeBox(box)
-
-        const Box_loot = Packed_boxes[box]
 
         let lastName = null
         let inARow = 1
@@ -183,15 +219,15 @@ const addBox = () => {
           }
           lastName = loot.Name
         })
-        Packed_boxes[box] = null
+        delete Packed_boxes[box.id]
 
         totalCash *= Cash_multi
-        totalCash *= Box_types[box.id].Multi
+        totalCash *= Box_types[box.type].Multi
 
         if (inARow >= 3) {
           const plusCash = round(totalCash * inARow / 10 * Cash_multi, 2)
           totalCash = totalCash + plusCash
-          notify(`${inARow} ${lastName}s in a row! +${plusCash}`)
+          notify(`${inARow} ${lastName}s in a row! +${formatCash(plusCash)}`)
         }
 
         addCash(totalCash)
@@ -221,7 +257,7 @@ packBox.addEventListener('click', () => {
     const box = Box_placed.$target
     box.classList.remove('box-unpacked')
     box.classList.add('box-packed')
-    box.src = `assets/${box.id}-closed.png`
+    box.src = `assets/${box.type}-closed.png`
     Box_placed.enable()
     Box_placed = null
     packBox.disabled = true
@@ -230,7 +266,7 @@ packBox.addEventListener('click', () => {
       removeLoot(loot.element)
       loot.element = null
     })
-    Packed_boxes[box] = Loot_in_box
+    Packed_boxes[box.id] = Loot_in_box
     Loot_in_box = []
   }
 })
@@ -246,9 +282,14 @@ makeBox.addEventListener('click', () => {
 // Loot
 
 const Loots = [
-  { Name: 'labubu', Chance: 100, Cost: 5 },
-  { Name: 'spinner', Chance: 90, Cost: 7 },
-  { Name: 'inverted-labubu', Chance: 50, Cost: 50 }
+  { Name: 'labubu', Chance: 1000, Cost: 5 },
+  { Name: 'spinner', Chance: 900, Cost: 7 },
+  { Name: 'pop-it', Chance: 100, Cost: 10 },
+  { Name: 'fidget-cube', Chance: 80, Cost: 12 },
+  { Name: 'fidgix-cube', Chance: 50, Cost: 15 },
+  { Name: 'needoh', Chance: 50, Cost: 20 },
+  { Name: 'pop-it_spinner', Chance: 30, Cost: 30 },
+  { Name: 'nuclear-bomb', Chance: 25, Cost: 50 },
 ]
 
 // luck = 2 = all things have the same chance
@@ -265,6 +306,12 @@ const getRandomLoot = (howLucky = 1) => {
   }
   return { ...Loots[Loots.length - 1] };
 }
+
+let Glowing_loot_chance = 0
+let Inverted_loot_chance = 0
+
+let Glowing_loot_multiplier = 5
+let Inverted_loot_multiplier = 5
 
 let Loot_limit = 7
 let Loot_count = 0
@@ -298,12 +345,27 @@ const addLoot = () => {
 
   randomLoot['element'] = loot
 
+  if (Glowing_loot_chance >= random(1, 100)) {
+    randomLoot.Cost *= Glowing_loot_multiplier
+    loot.style.filter += `drop-shadow(0 0 10px #fff)`
+  }
+  if (Inverted_loot_chance >= random(1, 100)) {
+    randomLoot.Cost *= Inverted_loot_multiplier
+    loot.style.filter += `invert(100%)`
+  }
+
   const draggable = createDraggable(loot, {
     container: above,
     containerFriction: 1,
     velocityMultiplier: 0,
 
     onRelease: (self) => {
+      if (discardLoot.style.visibility === 'visible' && isInside(loot, discardLoot)) {
+        self.revert()
+        removeLoot(loot)
+        return
+      }
+
       if (Box_placed != null && isInside(loot, boxPlace)) {
         if (Loot_in_box.length >= Max_loot_per_box) {
           notify('No more space in that box')
@@ -387,8 +449,6 @@ const hasReqs = (id) => {
 const createCard = (id) => {
   const upg = Upgrades[id]
 
-  let currentLevel = 0;
-
   const levels = upg.Levels
   const name = upg.Label
 
@@ -398,9 +458,9 @@ const createCard = (id) => {
   card.innerHTML = `
     ${SVG}
     <button></button>
-    <p class="amount">${currentLevel}/${levels.length}</p>
+    <p class="amount">${0}/${levels.length}</p>
     <p class="label">${name}</p>
-    <p class="price">$${levels[currentLevel].Cost}</p>
+    <p class="price">$${formatCash(levels[0].Cost)}</p>
   `;
   card.style.transform = `translate(${upg.X}%, ${upg.Y}%)`;
   below.appendChild(card);
@@ -410,6 +470,8 @@ const createCard = (id) => {
   const price = card.querySelector('.price')
 
   button.addEventListener('click', () => {
+    let currentLevel = Upgrades_bought[id] || 0
+
     if (currentLevel >= levels.length) {
       notify('Max level reached')
       return
@@ -434,6 +496,7 @@ const createCard = (id) => {
 
     currentLevel += 1
     Upgrades_bought[id] = currentLevel
+    localStorage.setItem('upgrades', JSON.stringify(Upgrades_bought))
 
     if (currentLevel == 1) {
       upg.Lines.forEach(function (path) {
@@ -455,7 +518,7 @@ const createCard = (id) => {
 
     const newPrice = levels[currentLevel] && levels[currentLevel].Cost
     if (newPrice) {
-      price.textContent = `$${newPrice}`
+      price.textContent = `$${formatCash(newPrice)}`
     } else {
       price.textContent = 'Maxed'
 
@@ -530,17 +593,17 @@ const Upgrades = {
     Label: 'Cash multi +0.1x',
     Levels:
       [
+        { Cost: 10, Func: () => Cash_multi += 0.1 },
+        { Cost: 15, Func: () => Cash_multi += 0.1 },
+        { Cost: 20, Func: () => Cash_multi += 0.1 },
         { Cost: 25, Func: () => Cash_multi += 0.1 },
-        { Cost: 45, Func: () => Cash_multi += 0.1 },
-        { Cost: 70, Func: () => Cash_multi += 0.1 },
-        { Cost: 95, Func: () => Cash_multi += 0.1 },
       ],
     X: 0, Y: 0,
     Requirements: []
   },
 
   'M2': {
-    Label: 'Loot luck',
+    Label: 'Loot luck +0.1',
     Levels:
       [
         { Cost: 30, Func: () => Luck += 0.1 },
@@ -568,8 +631,7 @@ const Upgrades = {
     Label: 'Box space +1',
     Levels:
       [
-        { Cost: 20, Func: () => Max_loot_per_box += 1 },
-        { Cost: 40, Func: () => Max_loot_per_box += 1 },
+        { Cost: 35, Func: () => Max_loot_per_box += 1 },
       ],
     X: -150, Y: 250,
     Requirements: ['L2']
@@ -590,8 +652,8 @@ const Upgrades = {
     Label: 'Cash multi +0.15x',
     Levels: [
       { Cost: 50, Func: () => Cash_multi += 0.15 },
-      { Cost: 80, Func: () => Cash_multi += 0.15 },
-      { Cost: 100, Func: () => Cash_multi += 0.15 },
+      { Cost: 70, Func: () => Cash_multi += 0.15 },
+      { Cost: 90, Func: () => Cash_multi += 0.15 },
       { Cost: 110, Func: () => Cash_multi += 0.15 },
     ],
     X: 10, Y: 240,
@@ -621,6 +683,203 @@ const Upgrades = {
     X: -100, Y: 375,
     Requirements: ['M4']
   },
+
+  'L5': {
+    Label: 'Boxes limit +1',
+    Levels:
+      [
+        { Cost: 50, Func: () => Boxes_limit += 1 },
+        { Cost: 60, Func: () => Boxes_limit += 1 },
+        { Cost: 70, Func: () => Boxes_limit += 1 },
+        { Cost: 85, Func: () => Boxes_limit += 1 },
+        { Cost: 100, Func: () => Boxes_limit += 1 },
+      ],
+    X: -135, Y: 500,
+    Requirements: ['M4']
+  },
+
+  'L6': {
+    Label: 'Box space +1',
+    Levels:
+      [
+        { Cost: 100, Func: () => Max_loot_per_box += 1 },
+        { Cost: 1000, Func: () => Max_loot_per_box += 1 },
+      ],
+    X: -170, Y: 650,
+    Requirements: ['L5']
+  },
+
+  'M5': {
+    Label: 'Cash multi +0.25x',
+    Levels:
+      [
+        { Cost: 100, Func: () => Cash_multi += 0.25 },
+        { Cost: 200, Func: () => Cash_multi += 0.25 },
+        { Cost: 350, Func: () => Cash_multi += 0.25 },
+        { Cost: 500, Func: () => Cash_multi += 0.25 },
+      ],
+    X: 0, Y: 530,
+    Requirements: ['M4']
+  },
+
+  'M6': {
+    Label: 'Cash multi +3x',
+    Levels:
+      [
+        { Cost: 2000, Func: () => Cash_multi += 3 },
+        { Cost: 5000, Func: () => Cash_multi += 3 },
+      ],
+    X: -2, Y: 640,
+    Requirements: ['M5']
+  },
+
+  'R5': {
+    Label: 'Loot luck +0.15',
+    Levels:
+      [
+        { Cost: 250, Func: () => Luck += 0.15 },
+        { Cost: 500, Func: () => Luck += 0.15 },
+      ],
+    X: 150, Y: 540,
+    Requirements: ['M4']
+  },
+
+  'R6': {
+    Label: 'Loot limit +1',
+    Levels:
+      [
+        { Cost: 250, Func: () => Loot_limit += 1 },
+        { Cost: 500, Func: () => Loot_limit += 1 },
+        { Cost: 750, Func: () => Loot_limit += 1 },
+      ],
+    X: 155, Y: 650,
+    Requirements: ['R5']
+  },
+
+  'R7': {
+    Label: 'Loot luck +0.3',
+    Levels:
+      [
+        { Cost: 1250, Func: () => Luck += 0.3 },
+      ],
+    X: 65, Y: 810,
+    Requirements: ['R6']
+  },
+
+  'R7A': {
+    Label: 'Loot discard area',
+    Levels: [{
+      Cost: 1000, Func: () => {
+        topRowPicker.style.visibility = 'visible'
+        discardLootButton.style.visibility = 'visible'
+      }
+    }],
+    X: 170, Y: 800,
+    Requirements: ['R6']
+  },
+
+  'M7': {
+    Label: 'Cash multi +5x',
+    Levels: [
+      { Cost: 100000, Func: () => Cash_multi += 5 },
+      { Cost: 150000, Func: () => Cash_multi += 5 },
+      { Cost: 200000, Func: () => Cash_multi += 5 },
+    ],
+    X: -27, Y: 770,
+    Requirements: ['M6']
+  },
+
+  'L7': {
+    Label: 'Glowing loot chance +10%',
+    Levels: [
+      { Cost: 5, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 25, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 125, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 625, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 3125, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 15625, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 78125, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 390625, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 1953125, Func: () => Glowing_loot_chance += 10 },
+      { Cost: 9765625, Func: () => Glowing_loot_chance += 10 },
+    ],
+    X: -170, Y: 900,
+    Requirements: ['M7', 'R7']
+  },
+
+  'L8': {
+    Label: 'Glowing loot multi +1x',
+    Levels: [
+      { Cost: 1_000_000, Func: () => Glowing_loot_multiplier += 1 },
+      { Cost: 1_000_000, Func: () => Glowing_loot_multiplier += 1 },
+      { Cost: 1_000_000, Func: () => Glowing_loot_multiplier += 1 },
+      { Cost: 1_000_000, Func: () => Glowing_loot_multiplier += 1 },
+      { Cost: 1_000_000, Func: () => Glowing_loot_multiplier += 1 },
+    ],
+    X: -170, Y: 1020,
+    Requirements: ['L7']
+  },
+
+  'M8': {
+    Label: 'Inverted loot +10%',
+    Levels: [
+      { Cost: 5, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 50, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 500, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 5_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 50_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 500_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 5_000_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 50_000_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 500_000_000, Func: () => Inverted_loot_chance += 10 },
+      { Cost: 5_000_000_000, Func: () => Inverted_loot_chance += 10 },
+    ],
+    X: -10, Y: 1020,
+    Requirements: ['L7', 'L6']
+  },
+
+  'R8': {
+    Label: 'Inverted multi +5x',
+    Levels: [
+      { Cost: 10_000_000, Func: () => Inverted_loot_multiplier += 5 },
+      { Cost: 50_000_000, Func: () => Inverted_loot_multiplier += 5 },
+      { Cost: 150_000_000, Func: () => Inverted_loot_multiplier += 5 },
+      { Cost: 350_000_000, Func: () => Inverted_loot_multiplier += 5 },
+      { Cost: 1_000_000_000, Func: () => Inverted_loot_multiplier += 5 },
+    ],
+    X: 160, Y: 1010,
+    Requirements: ['M8']
+  },
+
+  'R9': {
+    Label: 'Loot luck +0.45',
+    Levels: [
+      { Cost: 50_000_000, Func: () => Luck += 0.45 },
+      { Cost: 500_000_000, Func: () => Luck += 0.45 },
+    ],
+    X: 110, Y: 1150,
+    Requirements: ['R7']
+  },
+
+  'M9': {
+    Label: 'Loot luck +1',
+    Levels: [
+      { Cost: 1_000_000_000, Func: () => Luck += 1 },
+      { Cost: 1_500_000_000, Func: () => Luck += 1 },
+    ],
+    X: 0, Y: 1150,
+    Requirements: ['R9']
+  },
+
+  'L9': {
+    Label: 'Cash multi +10x',
+    Levels: [
+      { Cost: 200_000_000, Func: () => Cash_multi += 10 },
+      { Cost: 1_000_000_000, Func: () => Cash_multi += 10 },
+    ],
+    X: -150, Y: 1150,
+    Requirements: ['L8']
+  }
 }
 
 // add unlocks
@@ -664,4 +923,75 @@ for (const id in Upgrades) {
 
 console.log('main.js loaded')
 
-addCash(0)
+// testing
+
+const loadUpgrades = (upgs) => {
+  for (const id in upgs) {
+    const amountOfLvls = upgs[id]
+    const upg = Upgrades[id]
+    const levels = upg.Levels
+
+    for (let i = 0; i < Math.min(amountOfLvls, levels.length); i++) {
+      const currentLevel = i + 1
+
+      levels[i].Func()
+      Upgrades_bought[id] = currentLevel
+
+      if (currentLevel == 1) {
+        upg.Lines.forEach(function (path) {
+          path.style.stroke = primaryBought
+        })
+        
+        const upgsUnlocks = upg.Unlocks
+        upgsUnlocks.forEach(function (unlockedId) {
+          const [metReqs] = hasReqs(unlockedId)
+          if (metReqs) {
+            const svg = Upgrades[unlockedId].Card.querySelector('svg')
+            svg.style.fill = primaryBought
+            svg.querySelector('path').style.stroke = secondaryBought
+          }
+        })
+      }
+
+      const amount = upg.Card.querySelector('.amount')
+      const price = upg.Card.querySelector('.price')
+
+      amount.textContent = `${currentLevel}/${levels.length}`
+
+      const newPrice = levels[currentLevel] && levels[currentLevel].Cost
+      if (newPrice) {
+        price.textContent = `$${formatCash(newPrice)}`
+      } else {
+        price.textContent = 'Maxed'
+        price.style.color = 'rgb(110, 158, 220)'
+      }
+    }
+  }
+}
+
+const loadBoxes = (boxes) => {
+  boxes.forEach(function (type) {
+    const card = document.getElementById(type + 'SHOP')
+    const button = card.querySelector('button')
+    button.textContent = Equipped_box === type && 'Equipped' || 'Equip'
+    if (type === 'box') {
+      return
+    }
+    Boxes_owned.push(type)
+  })
+}
+
+localStorage.getItem('cash') && (addCash(parseFloat(localStorage.getItem('cash'))))
+localStorage.getItem('upgrades') && loadUpgrades(JSON.parse(localStorage.getItem('upgrades')))
+localStorage.getItem('equippedBox') && (Equipped_box = localStorage.getItem('equippedBox'))
+localStorage.getItem('boxes') && loadBoxes(JSON.parse(localStorage.getItem('boxes')))
+
+addCash(50000)
+
+// const mockUpgs = {}
+
+// for (const id in Upgrades) {
+//   mockUpgs[id] = 3
+// }
+
+// loadUpgrades(mockUpgs)
