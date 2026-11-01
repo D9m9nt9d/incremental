@@ -11,11 +11,33 @@ const cashLabel = document.getElementById('cash-label')
 let Cash = 0
 let Cash_multi = 1
 
+let Actual_cash_multi = 1
+
 const addCash = (amount) => {
   Cash += amount
   Cash = round(Cash, 2)
   cashLabel.textContent = `Cash: ${formatCash(Cash)}`
   localStorage.setItem('cash', Cash)
+}
+
+// Prestiges
+
+const belower = document.getElementById('belower')
+const prestigesLabel = document.getElementById('prestiges-label')
+
+let Prestiges = 0
+let Prestiges_multi = 1
+
+const addPrestiges = (amount) => {
+  Prestiges += amount
+  Prestiges = round(Prestiges, 2)
+  prestigesLabel.textContent = `Prestiges: ${Prestiges}`
+  localStorage.setItem('prestiges', Prestiges)
+
+  if (Prestiges > 0) {
+    prestigesLabel.style.display = 'block'
+    belower.style.display = 'flex'
+  }
 }
 
 // Top row picker stuff
@@ -223,6 +245,7 @@ const addBox = () => {
 
         totalCash *= Cash_multi
         totalCash *= Box_types[box.type].Multi
+        totalCash *= Actual_cash_multi
 
         if (inARow >= 3) {
           const plusCash = round(totalCash * inARow / 10 * Cash_multi, 2)
@@ -424,10 +447,9 @@ const SVG = `
 </svg>`;
 
 const below = document.getElementById('below')
-const lines = document.getElementById('lines')
 
-const hasReqs = (id) => {
-  const upg = Upgrades[id]
+const hasReqs = (id, upgs, upgsBought) => {
+  const upg = upgs[id]
 
   let reqsMet = true
   let reason = ''
@@ -437,17 +459,35 @@ const hasReqs = (id) => {
       return
     }
 
-    if (!Upgrades_bought[reqId]) {
+    if (!upgsBought[reqId]) {
       reqsMet = false
-      reason = Upgrades[reqId].Label
+      reason = upgs[reqId].Label
     }
   })
 
   return [reqsMet, reason]
 }
 
-const createCard = (id) => {
-  const upg = Upgrades[id]
+const createCard = (id, isPrestige) => {
+  let lsName = 'upgrades'
+  let parent = below
+  let upgs = Upgrades
+  let upgsBought = upgradesBought
+  let maxedColor = 'rgb(110, 158, 220)'
+  let maxedPrimaryColor = primaryBought
+  let maxedSecondaryColor = secondaryBought
+  if (isPrestige) {
+    lsName = 'prestige-upgrades'
+    parent = belower
+    upgs = Prestige_upgrades
+    upgsBought = Prestige_upgrades_bought
+    maxedColor = prestigeMaxed
+    maxedPrimaryColor = prestigePrimary
+    maxedSecondaryColor = prestigeSecondary
+  }
+  const prefix = isPrestige && '₱' || '$'
+
+  const upg = upgs[id]
 
   const levels = upg.Levels
   const name = upg.Label
@@ -460,24 +500,24 @@ const createCard = (id) => {
     <button></button>
     <p class="amount">${0}/${levels.length}</p>
     <p class="label">${name}</p>
-    <p class="price">$${formatCash(levels[0].Cost)}</p>
+    <p class="price">${prefix}${formatCash(levels[0].Cost)}</p>
   `;
   card.style.transform = `translate(${upg.X}%, ${upg.Y}%)`;
-  below.appendChild(card);
+  parent.appendChild(card);
 
   const button = card.querySelector('button')
   const amount = card.querySelector('.amount')
   const price = card.querySelector('.price')
 
   button.addEventListener('click', () => {
-    let currentLevel = Upgrades_bought[id] || 0
+    let currentLevel = upgsBought[id] || 0
 
     if (currentLevel >= levels.length) {
       notify('Max level reached')
       return
     }
 
-    const [requirementsMet, whichDoesnt] = hasReqs(id)
+    const [requirementsMet, whichDoesnt] = hasReqs(id, upgs, upgsBought)
     if (!requirementsMet) {
       notify(`Need ${whichDoesnt}`)
       return
@@ -486,30 +526,45 @@ const createCard = (id) => {
     const levelInfo = levels[currentLevel]
     const Cost = levelInfo.Cost
 
-    if (Cash < Cost) {
-      notify('Not enough cash')
-      return
+    if (isPrestige) {
+      if (Prestiges < Cost) {
+        notify('Not enough prestiges')
+        return
+      }
+    } else {
+      if (Cash < Cost) {
+        notify('Not enough cash')
+        return
+      }
     }
 
-    levelInfo.Func()
-    addCash(-Cost)
+    const notSave = levelInfo.Func()
+    if (notSave != true) {
+      if (isPrestige) {
+        addPrestiges(-Cost)
+      } else {
+        addCash(-Cost)
+      }
+    }
 
     currentLevel += 1
-    Upgrades_bought[id] = currentLevel
-    localStorage.setItem('upgrades', JSON.stringify(Upgrades_bought))
+    if (notSave != true) {
+      upgsBought[id] = currentLevel
+    }
+    localStorage.setItem(lsName, JSON.stringify(upgsBought))
 
     if (currentLevel == 1) {
       upg.Lines.forEach(function (path) {
-        animate(path, { stroke: { to: primaryBought, duration: 550 } })
+        animate(path, { stroke: { to: maxedPrimaryColor, duration: 550 } })
       })
 
       const upgsUnlocks = upg.Unlocks
       upgsUnlocks.forEach(function (unlockedId) {
         const [metReqs] = hasReqs(unlockedId)
         if (metReqs) {
-          const svg = Upgrades[unlockedId].Card.querySelector('svg')
-          animate(svg, { fill: { to: primaryBought, duration: 330 } })
-          animate(svg.querySelector('path'), { stroke: { to: secondaryBought, duration: 390 } })
+          const svg = upgs[unlockedId].Card.querySelector('svg')
+          animate(svg, { fill: { to: maxedPrimaryColor, duration: 330 } })
+          animate(svg.querySelector('path'), { stroke: { to: maxedSecondaryColor, duration: 390 } })
         }
       })
     }
@@ -518,7 +573,7 @@ const createCard = (id) => {
 
     const newPrice = levels[currentLevel] && levels[currentLevel].Cost
     if (newPrice) {
-      price.textContent = `$${formatCash(newPrice)}`
+      price.textContent = `${prefix}${formatCash(newPrice)}`
     } else {
       price.textContent = 'Maxed'
 
@@ -530,7 +585,7 @@ const createCard = (id) => {
           { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
         ],
         rotate: { from: '-1turn', delay: 0 },
-        color: { to: 'rgb(110, 158, 220)', ease: 'inExpo', duration: 550 },
+        color: { to: maxedColor, ease: 'inExpo', duration: 550 },
         delay: stagger(50),
         ease: 'inOutCirc',
         loop: false
@@ -544,8 +599,8 @@ const createCard = (id) => {
 const TENSION = 0.3; // higher = wigglier
 const WIDTH = 8;
 
-const connect = (a, b) => {
-  const box = below.getBoundingClientRect();
+const connect = (a, b, parent = below) => {
+  const box = parent.getBoundingClientRect();
   const ra = a.querySelector('svg').getBoundingClientRect();
   const rb = b.querySelector('svg').getBoundingClientRect();
 
@@ -581,7 +636,7 @@ const connect = (a, b) => {
   path.setAttribute("stroke", secondaryNotBought);
   path.setAttribute("stroke-width", WIDTH);
   path.setAttribute("stroke-linecap", "round");
-  lines.appendChild(path);
+  parent.querySelector('.lines').appendChild(path);
 
   return path;
 }
@@ -879,6 +934,85 @@ const Upgrades = {
     ],
     X: -150, Y: 1150,
     Requirements: ['L8']
+  },
+
+  'R8A': {
+    Label: 'Cash multi +50x',
+    Levels: [
+      { Cost: 10_000_000, Func: () => Cash_multi += 50 },
+      { Cost: 50_000_000, Func: () => Cash_multi += 50 },
+    ],
+    X: 160, Y: 1010,
+    Requirements: ['M8']
+  },
+
+  'M10': {
+    Label: 'Prestige (Reset)',
+    Levels: [
+      {
+        Cost: 5_000_000_000, Func: () => {
+          addPrestiges(1 * Prestiges_multi)
+          localStorage.removeItem('cash')
+          localStorage.removeItem('upgrades')
+          localStorage.removeItem('boxes')
+          localStorage.removeItem('equippedBox')
+          window.location.reload()
+          return true
+        }
+      }
+    ],
+    X: 0, Y: 1300,
+    Requirements: []
+  },
+}
+
+const Prestige_upgrades = {
+  'L1': {
+    Label: '2x cash',
+    Levels: [
+      { Cost: 1, Func: () => Actual_cash_multi *= 2 },
+    ],
+    X: -75, Y: 0,
+  },
+
+  'L2': {
+    Label: '2x cash again',
+    Levels: [
+      { Cost: 2, Func: () => Actual_cash_multi *= 2 },
+      { Cost: 4, Func: () => Actual_cash_multi *= 2 },
+      { Cost: 8, Func: () => Actual_cash_multi *= 2 },
+      { Cost: 16, Func: () => Actual_cash_multi *= 2 },
+      { Cost: 32, Func: () => Actual_cash_multi *= 2 },
+    ],
+    X: -120, Y: 100,
+  },
+
+  'R1': {
+    Label: '2x prestiges',
+    Levels: [
+      { Cost: 1, Func: () => Prestiges_multi *= 2 },
+    ],
+    X: 75, Y: 0,
+  },
+
+  'R2': {
+    Label: '2x prestiges',
+    Levels: [
+      { Cost: 2, Func: () => Prestiges_multi *= 2 },
+      { Cost: 4, Func: () => Prestiges_multi *= 2 },
+      { Cost: 8, Func: () => Prestiges_multi *= 2 },
+      { Cost: 16, Func: () => Prestiges_multi *= 2 },
+      { Cost: 32, Func: () => Prestiges_multi *= 2 },
+    ],
+    X: 120, Y: 100,
+  },
+
+  'M2': {
+    Label: '1024x cash',
+    Levels: [
+      { Cost: 1024, Func: () => Actual_cash_multi *= 1024 },
+    ],
+    X: 0, Y: 100,
   }
 }
 
@@ -921,34 +1055,79 @@ for (const id in Upgrades) {
   })
 }
 
+// Same with prestige upgrades
+
+const Prestige_upgrades_bought = {}
+
+const prestigeMaxed = 'rgb(237, 210, 161)'
+const prestigePrimary = 'rgb(177 111 36)'
+const prestigeSecondary = 'rgb(207 145 73)'
+
+// add unlocks
+
+for (const id in Prestige_upgrades) {
+  Prestige_upgrades[id].Unlocks = []
+  Prestige_upgrades[id].Requirements = []
+}
+
+// for (const id in Prestige_upgrades) {
+//   const upg = Prestige_upgrades[id]
+//   upg.Requirements.forEach(function (reqId) {
+//     Prestige_upgrades[reqId].Unlocks.push(id)
+//   })
+// }
+
+// create cards
+
+for (const id in Prestige_upgrades) {
+  const upg = Prestige_upgrades[id]
+  upg['Card'] = createCard(id, true)
+  upg['Lines'] = []
+
+  if (!upg.Requirements.length) {
+    const svg = upg.Card.querySelector('svg')
+    svg.style.fill = prestigePrimary
+    svg.querySelector('path').style.stroke = prestigeSecondary
+  }
+}
+
 console.log('main.js loaded')
 
 // testing
 
-const loadUpgrades = (upgs) => {
+const loadUpgrades = (upgs, isPrestige) => {
+  const upgsBought = isPrestige && Prestige_upgrades_bought || Upgrades_bought 
+  const upgrades = isPrestige && Prestige_upgrades || Upgrades
+
+  const maxedColor = isPrestige && prestigeMaxed || 'rgb(110, 158, 220)'
+  const primary = isPrestige && prestigePrimary || primaryBought
+  const secondary = isPrestige && prestigeSecondary || secondaryBought
+  
+  const prefix = isPrestige && '₱' || '$'
+
   for (const id in upgs) {
     const amountOfLvls = upgs[id]
-    const upg = Upgrades[id]
+    const upg = upgrades[id]
     const levels = upg.Levels
 
     for (let i = 0; i < Math.min(amountOfLvls, levels.length); i++) {
       const currentLevel = i + 1
 
       levels[i].Func()
-      Upgrades_bought[id] = currentLevel
+      upgsBought[id] = currentLevel
 
       if (currentLevel == 1) {
         upg.Lines.forEach(function (path) {
-          path.style.stroke = primaryBought
+          path.style.stroke = primary
         })
-        
+
         const upgsUnlocks = upg.Unlocks
         upgsUnlocks.forEach(function (unlockedId) {
-          const [metReqs] = hasReqs(unlockedId)
+          const [metReqs] = hasReqs(unlockedId, upgrades, upgsBought)
           if (metReqs) {
             const svg = Upgrades[unlockedId].Card.querySelector('svg')
-            svg.style.fill = primaryBought
-            svg.querySelector('path').style.stroke = secondaryBought
+            svg.style.fill = primary
+            svg.querySelector('path').style.stroke = secondary
           }
         })
       }
@@ -960,10 +1139,10 @@ const loadUpgrades = (upgs) => {
 
       const newPrice = levels[currentLevel] && levels[currentLevel].Cost
       if (newPrice) {
-        price.textContent = `$${formatCash(newPrice)}`
+        price.textContent = `${prefix}${formatCash(newPrice)}`
       } else {
         price.textContent = 'Maxed'
-        price.style.color = 'rgb(110, 158, 220)'
+        price.style.color = maxedColor
       }
     }
   }
@@ -986,7 +1165,11 @@ localStorage.getItem('upgrades') && loadUpgrades(JSON.parse(localStorage.getItem
 localStorage.getItem('equippedBox') && (Equipped_box = localStorage.getItem('equippedBox'))
 localStorage.getItem('boxes') && loadBoxes(JSON.parse(localStorage.getItem('boxes')))
 
-addCash(50000)
+const prestiges = localStorage.getItem('prestiges')
+if (prestiges) { addPrestiges(parseFloat(prestiges)) }
+
+const prestigesUpgs = localStorage.getItem('prestige-upgrades')
+if (prestigesUpgs) { loadUpgrades(JSON.parse(prestigesUpgs), true) }
 
 // const mockUpgs = {}
 

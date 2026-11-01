@@ -13,6 +13,7 @@ body {
 
 .topbar {
   z-index: 5;
+  pointer-events: none;
   position: sticky;
   top: 0;
   width: 600px;
@@ -20,6 +21,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.topbar p {
+  margin: 20px
+}
+.prestiges-label {
+  color: #f8b309;
+  -webkit-text-stroke: 0.5px #a48a1e;
 }
 
 button {
@@ -238,7 +246,16 @@ button {
 
 .below {
   width: 600px;
-  height: 1600px;
+  height: 1790px;
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+
+.belower {
+  width: 600px;
+  height: 250px;
   display: flex;
   justify-content: center;
   margin-top: 25px;
