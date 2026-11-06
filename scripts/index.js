@@ -947,7 +947,7 @@ const Upgrades = {
       { Cost: 10_000_000, Func: () => Cash_multi += 10 },
       { Cost: 50_000_000, Func: () => Cash_multi += 10 },
     ],
-    X: 160, Y: 1010,
+    X: 170, Y: 1250,
     Requirements: ['M8']
   },
 
